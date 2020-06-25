@@ -1,0 +1,205 @@
+                       Kubernaties Class:
+Get one domain & create one dns zone,launch instance with ubuntu as kubernetes-class,create s3 bucket as sreedevops,
+IN PUUTY:
+#apt-get update
+#apt-get install python-pip
+#pip install awscli
+[IAM users ->security crediantials -> create asccess key : generate id and passwd ]
+#aws configure
+  userid:
+  passwd:
+  region:us-east-1a
+  default o/p format :json
+#aws s3 ls
+
+CHECK IN Chrome:https://kubernetes.io/docs/tasks/tools/install-kubectl/
+#wget https://storage.googleapis.com/kubernetes-release/release/v1.11.0/bin/linux/amd64/kubectl
+#ll
+#mv kubectl /usr/local/bin/
+#cd /usr/local/bin/
+#kubectl
+#chmod +x ./kubectl
+#kubectl
+#pwd
+/usr/local/bin/
+
+CHECK IN Chrome:https://kubernetes.io/docs/setup/production-environment/tools/kops/
+#curl -LO https://github.com/kubernetes/kops/releases/download/$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)/kops-linux-amd64
+#chmod +x kops-linux-amd64
+#sudo mv kops-linux-amd64 /usr/local/bin/kops
+#kops
+#ssh-keygen
+#cd /
+#kops
+#kops create cluster --name=spyinfotech.xyz --state=s3://sreedevops --zones=us-east-1a --node-count=2 --node-size=t2.micro --dns-zone=spyinfotech.xyz
+#kops update cluster spyinfotech.xyz --yes --state=s3://sreedevops
+WAIT 2 to 3 mins and check EC2,ROUTE53,AUTOSCALING.
+#kubectl get nodes
+#kubectl run nginx1 --images=nginx --pot=80 --replicas=3
+#kubectl get pods
+#kubectl get deployement
+#kubectl run nginx2 --images=nginx --pot=80 --replicas=3
+#kubectl get pods
+#kubectl get pods -o wide
+#kubectl get pods
+#kubectl exec nginx1<pod id> ls service nginx status
+##kubectl get deployements
+#kubectl get deployements --all-namespaces
+#kubectl get pods
+#kubectl label pod <nginx1 pod id 1> <2> <3> env=prod
+#kubectl label pod <nginx2 pod id 1> <2> <3> env=test
+#kubectl get pods
+#kubectl get pods --show-labels
+#kubectl get pods -l env=prod
+#kubectl get pods -l env=test
+#kubectl get pods -l env!=test
+   o/p prod
+#kubectl get pods
+#kubectl delete pods <all pods>
+#kubectl get pods
+   o/p again come
+#kubectl get rs
+#kubectl get deployement
+#kubectl delete deployement nginx1
+#kubectl get pods --show-labels
+#kops delete cluster --name spyinfotech.xyz --state=s3://kuberneteslab
+check in EC2,ROUTE53,AUTOSCALING
+------------------------------------------------------------------------------------------------------
+LAUNCH 1 INSTANCE 
+#kubectl get nodes
+#kops edit ig --name spyinfotech.xyz --state=s3://kuberneteslab nodes
+   o/p max=3
+       min=3
+#kops update cluster spyinfotech.xyz --yes --state=s3://kuberneteslab
+CHECK IN EC2 INSTANCE DEPLOY
+check in chrome https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/
+#vim pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginxpod
+  labels:
+    app: nginxpod
+spec:
+  containers:
+    - name: nginxpod
+      image: nginx
+      ports:
+        - name: nginx-port
+          containerPort: 80
+:wq
+#alias kube=kubectl
+#kube create -f pod.yml          
+#kube get pods
+   o/p nginx1
+#kube get pods -o wide
+   o/p ip 172.....
+#vim pod2.yml   
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginxpod2
+  labels:
+    app: nginxpod2
+spec:
+  containers:
+    - name: nginxpod1
+      image: nginx
+      ports:
+        - name: nginx-port
+          containerPort: 80
+    - name: nginxpod2
+	  image: nginx
+      ports:
+        - name: nginx-port
+          containerPort: 80
+:wq
+#kube create -f pod2.yml
+#kube get pods
+  o/p nginxpod
+      nginxpod2
+#kube describe pod nginxpod2
+#kube describe pod nginxpod2 | grep po
+#kube get deployements
+#kube get pods
+  o/p nginxpod
+      nginxpod2
+#kube delete pod nginxpod nginxpod2
+#kube get pods
+#kube get deployements --help
+#vim  deploy.yml
+apiVersion: extensions/v1beta/
+kind: deployement
+metadata:
+  name: deploy-nginx
+spec:
+  replicas: 3
+  template:
+    metadata:
+	  labels:
+        app: nginx
+spec:
+  containers:
+    - name: mynginx
+      image: nginx
+      ports:
+        - name: web
+          containerPort: 80
+:wq
+#kube create -f deploy.yml
+#kube get deployements
+#kube get pods
+#kube get pods -o wide
+  o/p <deploy-nginx>
+#kube delete pod <deploy-nginx>
+#kube get rs
+#kube delete pod <1> <2> <3>
+#kube get pods
+#kube get pods 
+#kube get pods -o wide
+WE NEED TO ACCESS THIS ,WE NEED SERVICE ,SO EXPOSE THIS Pod
+#kube get pods
+   o/p <1>
+#kube expose pod <1> --type=Nodeport --name=nginx100-service
+#kube get pods -o wide
+this is for checking port of exposing pod
+#kube get svc
+"check the expose instance ip and port and paste in chrome"
+and check security grp of that instance,must enable http:anywhere.
+#kube get pods
+  o/p <2>
+#kube expose pod <2> --type=Nodeport --name=nginx101-service
+#kube get pods
+  o/p <3>
+#kube expose pod <3> --type=Nodeport --name=nginx102-service
+#kube get pods,deploy,svc,nodes
+#kube get deployement
+#kube delete deploy deploy-nginx
+#kube get pods
+#kube get svc
+#kube delete service nginx100-service
+#kube delete service nginx101-service
+#kube delete service nginx102-service
+#kube get pods
+#kube get svc
+#kube get deploy
+#vim lb.yml
+apiVersion: v1
+kind: service
+metadata:
+  name: mynginxservice
+spec:
+  containers:
+  - name: mynginx
+    image: nginx
+    ports:
+	  - port: 80
+        targetport: nodejs-port
+		protocol:TCP
+      selector:
+        app: helloworld
+      type: Loadbalancer		
+#kube create -f lb.yml
+#kube get pods
+CHECK IN EC2,LB,S3
+kops delete cluster spyinfotech.xyz --yes --state=s3://kuberneteslab
